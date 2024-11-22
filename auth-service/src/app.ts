@@ -82,7 +82,7 @@ app.post(
     const { email, otp } = req.body;
 
     try {
-      const storedOtp = getOtp(email); // Retrieve the OTP from Redis
+      const storedOtp = await getOtp(email); // Retrieve the OTP from Redis
 
       if (!storedOtp) {
         res.status(400).json({ message: "OTP has expired or is invalid" });
@@ -90,6 +90,8 @@ app.post(
       }
 
       if (storedOtp !== otp) {
+        console.log(storedOtp, " ", otp);
+        
         res.status(400).json({ message: "Incorrect OTP" });
         return;
       }

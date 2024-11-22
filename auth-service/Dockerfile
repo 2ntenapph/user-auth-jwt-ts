@@ -8,7 +8,7 @@ WORKDIR /usr/src/app
 COPY package*.json ./
 
 # Install dependencies
-RUN npm install
+RUN npm install --build-from-source
 
 # Copy the rest of the application files
 COPY . .
@@ -18,3 +18,4 @@ EXPOSE 4000
 
 # Start the application
 CMD ["npm", "start"]
+

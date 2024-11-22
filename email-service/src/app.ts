@@ -1,7 +1,9 @@
 import express, { Request, Response } from 'express';
 import bodyParser from 'body-parser';
 import nodemailer from 'nodemailer';
-import { getOtp } from './utils/redisClient';
+import { getOtp, redis } from './utils/redisClient';
+
+//TODO: Add kafka for email queue
 
 const app = express();
 app.use(bodyParser.json());
@@ -14,6 +16,18 @@ const transporter = nodemailer.createTransport({
     pass: process.env.EMAIL_PASS,
   },
 });
+
+app.get('/test-redis', async (req, res) => {
+  try {
+    await redis.set('test', 'value', 'EX', 10); // Set a test key with expiration
+    const value = await redis.get('test'); // Retrieve the test key
+    res.status(200).json({ message: 'Redis is working', value });
+  } catch (error: any) {
+    res.status(500).json({ message: 'Error connecting to Redis', error: error.message });
+  }
+});
+
+
 
 /**
  * Sends an email using Nodemailer with HTML content.
