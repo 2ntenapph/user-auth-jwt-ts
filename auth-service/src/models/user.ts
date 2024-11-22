@@ -1,5 +1,5 @@
 import { DataTypes, Model } from 'sequelize';
-import sequelize from './db';  // Import Sequelize setup
+import sequelize from '../db/db';  // Import Sequelize setup
 
 interface IUser {
   email: string;

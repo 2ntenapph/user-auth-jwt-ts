@@ -1,0 +1,58 @@
+version: '3.8'
+
+services:
+  auth-service:
+    build:
+      context: ./auth-service
+    ports:
+      - "4000:4000"
+    environment:
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - REDIS_PASSWORD=${REDIS_PASSWORD}
+      - SECRET_KEY=${SECRET_KEY}
+    depends_on:
+      - redis
+    networks:
+      - app-network
+
+  email-service:
+    build:
+      context: ./email-service
+    ports:
+      - "4001:4001"
+    environment:
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - REDIS_PASSWORD=${REDIS_PASSWORD}
+      - EMAIL_USER=${EMAIL_USER}
+      - EMAIL_PASS=${EMAIL_PASS}
+    depends_on:
+      - redis
+    networks:
+      - app-network
+
+  api-gateway:
+    build:
+      context: ./api-gateway
+    ports:
+      - "4002:4002"
+    depends_on:
+      - auth-service
+      - email-service
+    networks:
+      - app-network
+
+  redis:
+    image: redis:latest
+    ports:
+      - "6379:6379"
+    volumes:
+      - ./redis/redis.conf:/usr/local/etc/redis/redis.conf
+    command: redis-server /usr/local/etc/redis/redis.conf
+    networks:
+      - app-network
+
+networks:
+  app-network:
+    driver: bridge
