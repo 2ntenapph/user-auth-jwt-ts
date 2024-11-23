@@ -1,10 +1,15 @@
-import express from "express";
+import express from 'express';
 import healthCheckRouter from './routes/healthCheck';
 import authProxyRouter from './routes/authProxy';
 import emailProxyRouter from './routes/emailProxy';
-import config from "./utils/config";
+import config from './utils/config';
+import logger from './utils/logger';
+import logRequests from './middleware/loggerMiddleware';
 
 const app = express();
+
+// Log all incoming requests
+app.use(logRequests);
 
 // Health Check Route
 app.use('/', healthCheckRouter);
@@ -15,9 +20,15 @@ app.use('/auth', authProxyRouter);
 // Email Proxy Route
 app.use('/email', emailProxyRouter);
 
-app.listen(config.port, () => {
-    console.log(`API Gateway running on port ${config.port}`);
-  });
+// Error handling middleware
+app.use((err: any, req: any, res: any, next: any) => {
+  logger.error(`Error occurred: ${err.message}`, { stack: err.stack });
+  res.status(500).json({ error: 'Internal Server Error', message: err.message });
+});
 
+// Start the server
+app.listen(config.port, () => {
+  logger.info(`API Gateway running on port ${config.port} in ${process.env.NODE_ENV || 'development'} mode`);
+});
 
 export default app;

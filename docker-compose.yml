@@ -42,6 +42,8 @@ services:
       - email-service
     networks:
       - app-network
+    volumes:
+      - ./logs:/usr/src/app/logs
 
   redis:
     image: redis:latest
