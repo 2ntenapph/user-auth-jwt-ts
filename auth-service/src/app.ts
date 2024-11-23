@@ -30,7 +30,7 @@ app.post("/signup", async (req: Request, res: Response): Promise<void> => {
   const user = await User.create({
     email,
     password: hashedPassword,
-    role,
+    role: role !== "user" ? role : "user",
     isVerified: false,
   });
 
