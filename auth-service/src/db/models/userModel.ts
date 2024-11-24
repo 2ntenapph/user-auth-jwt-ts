@@ -1,8 +1,9 @@
 import { DataTypes, Model } from 'sequelize';
-import sequelize from '../index';  // Import Sequelize setup
+import sequelize from '../index'; // Import Sequelize setup
+import { logInfo, logError } from '../../utils/loggerHelper'; // Import logger helpers
 
 interface IUser {
-  id?: number; 
+  id?: number;
   email: string;
   passwordHash: string;
   role?: string;
@@ -10,7 +11,7 @@ interface IUser {
 }
 
 class User extends Model<IUser> implements IUser {
-  public id?: number; 
+  public id?: number;
   public email!: string;
   public passwordHash!: string;
   public role!: string;
@@ -50,7 +51,14 @@ User.init(
   }
 );
 
-// Sync the database (create tables if they don't exist)
-User.sync();
+// Sync the model with the database
+(async () => {
+  try {
+    await User.sync(); // Syncs the table in the database
+    logInfo('User Model Synced Successfully', { tableName: 'Users' });
+  } catch (err: any) {
+    logError('Error Syncing User Model', err, { tableName: 'Users' });
+  }
+})();
 
 export default User;

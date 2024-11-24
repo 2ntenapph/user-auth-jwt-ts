@@ -17,10 +17,34 @@ router.use(
     pathRewrite: { '^/email': '' },
     logLevel: 'debug',
     onProxyReq: (proxyReq, req) => {
-      logger.info(`Proxying request: ${req.method} ${req.url} -> ${config.emailServiceUrl}`);
+      // Log request metadata in structured format
+      logger.info('Proxy Request Sent', {
+        service: 'email-proxy',
+        method: req.method,
+        originalUrl: req.url,
+        targetUrl: config.emailServiceUrl,
+        headers: req.headers,
+      });
+    },
+    onProxyRes: (proxyRes, req, res) => {
+      // Log response details
+      logger.info('Proxy Response Received', {
+        service: 'email-proxy',
+        method: req.method,
+        url: req.url,
+        statusCode: proxyRes.statusCode,
+        headers: proxyRes.headers,
+      });
     },
     onError: (err, req, res) => {
-      logger.error(`Proxy error: ${err.message}`, { stack: err.stack });
+      // Log errors in structured format
+      logger.error('Proxy Error', {
+        service: 'email-proxy',
+        message: err.message,
+        stack: err.stack,
+        method: req.method,
+        url: req.url,
+      });
       res.status(502).json({ error: 'Bad Gateway', message: err.message });
     },
   })

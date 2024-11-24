@@ -10,18 +10,32 @@ router.use(
   createProxyMiddleware({
     target: config.authServiceUrl,
     changeOrigin: true,
-    pathRewrite: (path, req) => {
-      // Log the incoming path
-      logger.debug(`Incoming path: ${path}`);
-      // Rewrite the path
-      return path.replace(/^\/auth/, '');
-    },
+    pathRewrite: { '^/auth': '' },
     logLevel: 'debug',
     onProxyReq: (proxyReq, req) => {
-      logger.info(`Proxying request: ${req.method} ${req.url} -> ${config.authServiceUrl}`);
+      // Log request metadata in structured format
+      logger.info('Proxy Request Sent', {
+        method: req.method,
+        originalUrl: req.url,
+        targetUrl: config.authServiceUrl,
+        headers: req.headers,
+      });
+    },
+    onProxyRes: (proxyRes, req, res) => {
+      // Log response status and headers
+      logger.info('Proxy Response Received', {
+        statusCode: proxyRes.statusCode,
+        headers: proxyRes.headers,
+      });
     },
     onError: (err, req, res) => {
-      logger.error(`Proxy error: ${err.message}`, { stack: err.stack });
+      // Log errors in structured format
+      logger.error('Proxy Error', {
+        message: err.message,
+        stack: err.stack,
+        method: req.method,
+        url: req.url,
+      });
       res.status(502).json({ error: 'Bad Gateway', message: err.message });
     },
   })
