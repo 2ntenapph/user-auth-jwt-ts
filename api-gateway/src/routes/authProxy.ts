@@ -10,8 +10,13 @@ router.use(
   createProxyMiddleware({
     target: config.authServiceUrl,
     changeOrigin: true,
-    pathRewrite: { '^/auth': '' },
-    logLevel: 'debug', // Debug-level logs for proxy
+    pathRewrite: (path, req) => {
+      // Log the incoming path
+      logger.debug(`Incoming path: ${path}`);
+      // Rewrite the path
+      return path.replace(/^\/auth/, '');
+    },
+    logLevel: 'debug',
     onProxyReq: (proxyReq, req) => {
       logger.info(`Proxying request: ${req.method} ${req.url} -> ${config.authServiceUrl}`);
     },

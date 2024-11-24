@@ -7,12 +7,20 @@ services:
     ports:
       - "4000:4000"
     environment:
-      - REDIS_HOST=redis
-      - REDIS_PORT=6379
+      - REDIS_HOST=${REDIS_HOST}
+      - REDIS_PORT=${REDIS_PORT}
+      - DB_HOST=${DB_HOST}
+      - DB_PORT=${DB_PORT}
+      - DB_USER=${DB_USER}
+      - DB_PASS=${DB_PASS}
+      - DB_NAME=${DB_NAME}
       - REDIS_PASSWORD=${REDIS_PASSWORD}
+      - EMAIL_SERVICE_URL=${EMAIL_SERVICE_URL}
       - JWT_SECRET=${JWT_SECRET}
+      - JWT_REFRESH_SECRET=${JWT_REFRESH_SECRET}
     depends_on:
       - redis
+      - auth-db
     networks:
       - app-network
 
@@ -22,8 +30,8 @@ services:
     ports:
       - "4001:4001"
     environment:
-      - REDIS_HOST=redis
-      - REDIS_PORT=6379
+      - REDIS_HOST=${REDIS_HOST}
+      - REDIS_PORT=${REDIS_PORT}
       - REDIS_PASSWORD=${REDIS_PASSWORD}
       - EMAIL_USER=${EMAIL_USER}
       - EMAIL_PASS=${EMAIL_PASS}
@@ -37,6 +45,9 @@ services:
       context: ./api-gateway
     ports:
       - "4002:4002"
+    environment:
+      - ALLOWED_ORIGINS=${ALLOWED_ORIGINS}
+      - JWT_SECRET=${JWT_SECRET}
     depends_on:
       - auth-service
       - email-service
@@ -45,16 +56,34 @@ services:
     volumes:
       - ./logs:/usr/src/app/logs
 
+  auth-db:
+    image: postgres:latest
+    container_name: auth-db
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASS}
+      POSTGRES_DB: ${DB_NAME}
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    networks:
+      - app-network
+
   redis:
     image: redis:latest
+    container_name: redis
     ports:
-      - "6379:6379" 
+      - "6379:6379"
     volumes:
       - ./redis/redis.conf:/usr/local/etc/redis/redis.conf
     command: redis-server /usr/local/etc/redis/redis.conf
     networks:
       - app-network
 
+volumes:
+  db_data:
+  profiles_db_data:
 
 networks:
   app-network:

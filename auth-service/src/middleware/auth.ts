@@ -1,26 +1,45 @@
-import { Request, Response, NextFunction } from 'express';
-import jwt from 'jsonwebtoken';
-import dotenv from 'dotenv';
-
-dotenv.config();
+import { Request, Response, NextFunction } from "express";
+import jwt from "jsonwebtoken";
+import { isInBlocklist } from "../redis/utils/redisAuth";
 
 interface JwtPayload {
   email: string;
-  role: string;
+  jti?: string; // Ensure jti is part of the payload
 }
 
-export const verifyToken = async (req: Request, res: Response, next: NextFunction): Promise<any> => {
-  const token = req.headers['authorization']?.split(' ')[1];
+export const authenticateToken = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  const authHeader = req.headers["authorization"];
+  const token = authHeader && authHeader.split(" ")[1];
 
   if (!token) {
-    return res.status(403).json({ message: 'Token required' });
+    res.status(403).json({ message: "Token required" });
+    return;
   }
 
   try {
-    const decoded = jwt.verify(token, process.env.SECRET_KEY as string) as JwtPayload;
-    (req as any).user = decoded; // Add decoded user info to request
+    // Verify with the access token secret
+    const decoded = jwt.verify(token, process.env.JWT_SECRET!) as JwtPayload;
+
+    // Check if the token is in the blocklist
+    if (decoded.jti) {
+      const isBlocked = await isInBlocklist(decoded.jti);
+      if (isBlocked) {
+        res.status(401).json({ message: "Token revoked" });
+        return;
+      }
+    }
+
+    (req as any).user = decoded; // Attach decoded token to the request
     next();
-  } catch (err) {
-    return res.status(401).json({ message: 'Invalid or expired token' });
+  } catch (err: any) {
+    if (err.name === "TokenExpiredError") {
+      res.status(401).json({ message: "Token has expired" });
+    } else {
+      res.status(401).json({ message: "Invalid token" });
+    }
   }
 };

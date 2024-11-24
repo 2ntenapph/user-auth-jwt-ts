@@ -1,7 +1,7 @@
 import express from 'express';
-import cors from 'cors';
 import healthCheckRouter from './routes/healthCheck';
 import authProxyRouter from './routes/authProxy';
+import profileProxyRouter from './routes/profileProxy';
 import emailProxyRouter from './routes/emailProxy';
 import config from './utils/config';
 import logger from './utils/logger';
@@ -24,6 +24,9 @@ app.use('/auth', authProxyRouter);
 
 // Email Proxy Route
 app.use('/email', emailProxyRouter);
+
+// Profile Proxy Route
+app.use('/profile', profileProxyRouter);
 
 // Error handling middleware
 app.use((err: any, req: any, res: any, next: any) => {

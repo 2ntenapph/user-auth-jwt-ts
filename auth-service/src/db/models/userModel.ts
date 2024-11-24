@@ -1,32 +1,35 @@
 import { DataTypes, Model } from 'sequelize';
-import sequelize from '../db/db';  // Import Sequelize setup
+import sequelize from '../index';  // Import Sequelize setup
 
 interface IUser {
+  id?: number; 
   email: string;
-  password: string;
-  role: string;
-  isVerified: boolean;
-  otp: string | null;
-  otpExpiration: Date | null;
+  passwordHash: string;
+  role?: string;
+  isVerified?: boolean;
 }
 
 class User extends Model<IUser> implements IUser {
+  public id?: number; 
   public email!: string;
-  public password!: string;
+  public passwordHash!: string;
   public role!: string;
   public isVerified!: boolean;
-  public otp!: string | null;
-  public otpExpiration!: Date | null;
 }
 
 User.init(
   {
+    id: {
+      type: DataTypes.INTEGER,
+      autoIncrement: true,
+      primaryKey: true,
+    },
     email: {
       type: DataTypes.STRING,
       allowNull: false,
       unique: true,
     },
-    password: {
+    passwordHash: {
       type: DataTypes.STRING,
       allowNull: false,
     },
@@ -39,18 +42,11 @@ User.init(
       type: DataTypes.BOOLEAN,
       defaultValue: false,
     },
-    otp: {
-      type: DataTypes.STRING,
-      allowNull: true,
-    },
-    otpExpiration: {
-      type: DataTypes.DATE,
-      allowNull: true,
-    },
   },
   {
     sequelize,
     modelName: 'User',
+    timestamps: true,
   }
 );
 

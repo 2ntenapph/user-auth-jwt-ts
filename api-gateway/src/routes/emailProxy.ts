@@ -2,8 +2,12 @@ import { createProxyMiddleware } from 'http-proxy-middleware';
 import { Router } from 'express';
 import config from '../utils/config';
 import logger from '../utils/logger';
+import { authenticateToken } from '../middleware/authenticateToken';
 
 const router = Router();
+
+// Use middleware to validate JWT
+router.use(authenticateToken);
 
 router.use(
   '/',
