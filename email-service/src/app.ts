@@ -1,33 +1,33 @@
-import express, { Request, Response } from 'express';
-import bodyParser from 'body-parser';
-import nodemailer from 'nodemailer';
-import { getOtp, redis } from './utils/redisClient';
-
-//TODO: Add kafka for email queue
+import express, { Request, Response } from "express";
+import bodyParser from "body-parser";
+import nodemailer from "nodemailer";
+import { getOtp, redis } from "./utils/redisClient";
+import { logInfo, logError, logWarn } from "./utils/loggerHelper"; // Logging helpers
 
 const app = express();
 app.use(bodyParser.json());
 
 // Nodemailer Transporter
 const transporter = nodemailer.createTransport({
-  service: 'Gmail',
+  service: "Gmail",
   auth: {
     user: process.env.EMAIL_USER,
     pass: process.env.EMAIL_PASS,
   },
 });
 
-app.get('/test-redis', async (req, res) => {
+// Test Redis Connectivity Route
+app.get("/test-redis", async (req, res) => {
   try {
-    await redis.set('test', 'value', 'EX', 10); // Set a test key with expiration
-    const value = await redis.get('test'); // Retrieve the test key
-    res.status(200).json({ message: 'Redis is working', value });
+    await redis.set("test", "value", "EX", 10); // Set a test key with expiration
+    const value = await redis.get("test"); // Retrieve the test key
+    logInfo("Redis Test Successful", { value });
+    res.status(200).json({ message: "Redis is working", value });
   } catch (error: any) {
-    res.status(500).json({ message: 'Error connecting to Redis', error: error.message });
+    logError("Redis Connection Error", error);
+    res.status(500).json({ message: "Error connecting to Redis", error: error.message });
   }
 });
-
-
 
 /**
  * Sends an email using Nodemailer with HTML content.
@@ -37,25 +37,18 @@ app.get('/test-redis', async (req, res) => {
  * @returns Promise<void>
  */
 const sendEmail = async (to: string, subject: string, html: string): Promise<void> => {
-  return new Promise((resolve, reject) => {
-    transporter.sendMail(
-      {
-        from: process.env.EMAIL_USER,
-        to,
-        subject,
-        html,
-      },
-      (err, info) => {
-        if (err) {
-          console.error(`Error sending email to ${to}:`, err);
-          reject(err);
-        } else {
-          console.log(`Email sent to ${to}:`, info.response);
-          resolve();
-        }
-      }
-    );
-  });
+  try {
+    const info = await transporter.sendMail({
+      from: process.env.EMAIL_USER,
+      to,
+      subject,
+      html,
+    });
+    logInfo("Email Sent Successfully", { to, subject, response: info.response });
+  } catch (error: any) {
+    logError(`Error Sending Email to ${to}`, error, { subject });
+    throw error;
+  }
 };
 
 // Generate HTML email template
@@ -81,30 +74,35 @@ const generateEmailTemplate = (otp: string): string => {
 };
 
 // Send OTP Route
-app.post('/send-otp', async (req: Request, res: Response): Promise<void> => {
+app.post("/send-otp", async (req: Request, res: Response): Promise<void> => {
   const { email } = req.body;
 
   try {
     const otp = await getOtp(email);
 
     if (!otp) {
-      res.status(404).json({ message: 'OTP not found or expired' });
+      logWarn("OTP Not Found or Expired", { email });
+      res.status(404).json({ message: "OTP not found or expired" });
       return;
     }
 
     // Generate email content
-    const subject = 'Your Verification Code';
+    const subject = "Your Verification Code";
     const htmlContent = generateEmailTemplate(otp);
 
     // Send OTP Email
     await sendEmail(email, subject, htmlContent);
+    logInfo("OTP Email Sent", { email });
 
-    res.status(200).json({ message: 'OTP sent successfully' });
-  } catch (err: any) {
-    res.status(500).json({ message: 'Error sending email', error: err.message });
+    res.status(200).json({ message: "OTP sent successfully" });
+  } catch (error: any) {
+    logError("Error Sending OTP Email", error, { email });
+    res.status(500).json({ message: "Error sending email", error: error.message });
   }
 });
 
 // Start Email Service
 const PORT = 4001;
-app.listen(PORT, () => console.log(`Email Service running on port ${PORT}`));
+app.listen(PORT, () => {
+  logInfo("Email Service Started", { port: PORT });
+});
