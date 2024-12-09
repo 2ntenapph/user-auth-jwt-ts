@@ -5,16 +5,20 @@ import profileProxyRouter from './routes/profileProxy';
 import emailProxyRouter from './routes/emailProxy';
 import config from './utils/config';
 import logger from './utils/logger';
-import logRequests from './middleware/loggerMiddleware';
+import logRequestsAndResponses from './middleware/loggerMiddleware';
 import corsMiddleware from './middleware/corsMiddleware';
+import cookieParser from 'cookie-parser';
 
 const app = express();
 
 // Apply CORS middleware
 app.use(corsMiddleware);
 
-// Middleware to log requests
-app.use(logRequests);
+// Parse cookies
+app.use(cookieParser());
+
+// Log incoming requests and responses
+app.use(logRequestsAndResponses);
 
 // Health Check Route
 app.use('/', healthCheckRouter);
@@ -30,12 +34,21 @@ app.use('/profile', profileProxyRouter);
 
 // Error handling middleware
 app.use((err: any, req: any, res: any, next: any) => {
-  logger.error(`Error occurred: ${err.message}`, { stack: err.stack });
+  logger.error('Error Middleware', {
+    message: err.message,
+    stack: err.stack,
+    method: req.method,
+    url: req.url,
+  });
   res.status(500).json({ error: 'Internal Server Error', message: err.message });
 });
 
+// Start the server
 app.listen(config.port, () => {
-  logger.info(`API Gateway running on port ${config.port} in ${process.env.NODE_ENV || 'development'} mode`);
+  logger.info('API Gateway Started', {
+    port: config.port,
+    environment: process.env.NODE_ENV || 'development',
+  });
 });
 
 export default app;
